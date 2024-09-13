@@ -1,4 +1,4 @@
-addGeneSuffix <- function(df,excludeVars=NULL){
+addGeneSuffixDF <- function(df,excludeVars=NULL){
 	  
   if(is.null(excludeVars)){
     ensembl_ID = colnames(df)
@@ -36,4 +36,25 @@ addGeneSuffix <- function(df,excludeVars=NULL){
   return(df)
 }
 
+addGeneSuffixID <- function(ensembl_ID,excludeVars=NULL){
 
+	## the loading of this library will disrupt the usage of select in dplyr
+    
+	mart <- biomaRt::useMart(biomart="ENSEMBL_MART_ENSEMBL", 
+				 host="https://www.ensembl.org",                      
+				 path="/biomart/martservice", 
+				 dataset="hsapiens_gene_ensembl")
+    
+	G_list = biomaRt::getBM(filters= "ensembl_gene_id", 
+				attributes=c("hgnc_symbol","ensembl_gene_id"),
+                                values=ensembl_ID, mart= mart) %>%
+        # replace - with . for gene names
+        mutate(hgnc_symbol=gsub( "-",".",hgnc_symbol))
+
+  	# use gene symbols as the suffixes
+  	ensemble_gene = gsub("_$|_NA$", "", 
+			       paste0(ensembl_ID, "_", G_list$hgnc_symbol[match(ensembl_ID, G_list$ensembl_gene_id)])
+	)
+
+	return(ensemble_gene)
+}
