@@ -22,6 +22,14 @@ tableVecs2df <- function(name_df){
   df <- reshape2::melt(name_df)
   return(df)
 }
+
+## categorical variable filtering
+
+
+
+
+
+
 ## add ffix 
 add.Type <- function(df, excludeVars=NULL){
   

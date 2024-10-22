@@ -1,4 +1,4 @@
-biplotByGroup <- function(df, groups=NULL, show_outliers=F){
+biplotByGroup <- function(df, groups=NULL, show_outliers=F, legendPos="top", ellipse=TRUE){
   
   ir.pca <- prcomp(df, center = TRUE, scale. = TRUE)
   
@@ -6,11 +6,11 @@ biplotByGroup <- function(df, groups=NULL, show_outliers=F){
   if(!is.null(groups)){
     g <- ggbiplot::ggbiplot(ir.pca, obs.scale = 1, var.scale = 1, 
                             groups = groups %>% as.character,
-                            ellipse = T, circle = F,
+                            ellipse = ellipse, circle = F,
                             var.axes = F)
   }else{
     g <- ggbiplot::ggbiplot(ir.pca, obs.scale = 1, var.scale = 1, 
-                            ellipse = F, circle = F,
+                            ellipse = ellipse, circle = F,
                             var.axes = F)
   }
   if(show_outliers){
@@ -23,8 +23,7 @@ biplotByGroup <- function(df, groups=NULL, show_outliers=F){
   } 
  
   # g <- g + scale_color_discrete(name = '')
-  g <- g + theme(#legend.direction = 'horizontal', 
-                 legend.position = 'right')
+  g <- g + theme( legend.position = legendPos)
   g <- g + theme(panel.background = element_blank()) # remove the grey background
   g <- g + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) # remove the grid
   g<- g + theme(axis.line.x = element_line(color="black", size = 0.5),
