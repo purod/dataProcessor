@@ -1,0 +1,138 @@
+---
+title: "DoubletFinder"
+author: "Wenjun Zhu"
+date: "10/24/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+### install libraries
+
+```{r install lib}
+#install.packages("Seurat")
+#install.packages("ggplot2")
+#install.packages("tidyverse")
+#remotes::install_github('chris-mcginnis-ucsf/DoubletFinder')
+#install.packages("readr")
+#install.packages("readxl")
+#install.packages("Matrix")
+```
+
+
+### load libraries
+
+```{r lib}
+library("Seurat")
+library("ggplot2")
+library("tidyverse")
+library("DoubletFinder")
+library("readr")
+library("readxl")
+library("Matrix")
+library("knitr")
+```
+
+
+### Load data
+
+```{r data}
+# Read in 'matrix.mtx'
+counts <- readMM("/Users/jasmine/Documents/GNS/filtered_gene_bc_matrices/GRCh38/matrix.mtx")
+
+# Read in 'genes.tsv'
+gene_ids <- read_tsv("/Users/jasmine/Documents/GNS/filtered_gene_bc_matrices/GRCh38/genes.tsv", col_names = FALSE, show_col_types = FALSE)$X1
+
+# Read in 'barcodes.tsv'
+cell_ids <- read_tsv("/Users/jasmine/Documents/GNS/filtered_gene_bc_matrices/GRCh38/barcodes.tsv", col_names = FALSE, show_col_types = FALSE)$X1
+
+# Make the column names as the cell IDs and the row names as the gene IDs
+rownames(counts) <- gene_ids
+colnames(counts) <- cell_ids
+```
+
+
+### Initialize the Seurat object with the raw data
+
+```{r seurat obj}
+doublet.seurat.obj <- CreateSeuratObject(counts=counts,project="doublet",min.cells=3,min.features=2)
+str(doublet.seurat.obj)
+```
+
+
+### QC and Filtering
+
+```{r QC}
+# 1.QC
+doublet.seurat.obj[["percent.mt"]] <- PercentageFeatureSet(doublet.seurat.obj,pattern = "^MT-")
+
+# 2.Filtering
+doublet.seurat.obj <- subset(doublet.seurat.obj,subset = nFeature_RNA > 2 & nFeature_RNA < 1000 & percent.mt < 10)
+
+# 3.Normalization
+doublet.seurat.obj <- NormalizeData(doublet.seurat.obj)
+
+# 4.Identify highly variable features
+doublet.seurat.obj <- FindVariableFeatures(doublet.seurat.obj)
+
+# 5.Scaling
+all.genes <- rownames(doublet.seurat.obj)
+doublet.seurat.obj <- ScaleData(doublet.seurat.obj)
+
+# 6.Perform linear dimensionality reduction
+doublet.seurat.obj <- RunPCA(doublet.seurat.obj,features = VariableFeatures(object=doublet.seurat.obj))
+
+# 7.Clustering
+doublet.seurat.obj <- FindNeighbors(doublet.seurat.obj,dims = 1:15)
+doublet.seurat.obj <- FindClusters(doublet.seurat.obj,resolution = 0.1)
+DimPlot(doublet.seurat.obj,group.by = "RNA_snn_res.0.1",label = TRUE)
+# Non-linear dimensionality reduction
+doublet.seurat.obj <- RunUMAP(doublet.seurat.obj,dims = 1:15)
+DimPlot(doublet.seurat.obj,reduction = "umap",label = TRUE)
+```
+
+
+### DoubletFinder
+
+```{r Doublet}
+## pK Identification (no ground-truth)
+sweep.res.list_doublet <- paramSweep_v3(doublet.seurat.obj, PCs = 1:15, sct = FALSE)
+sweep.stats_doublet <- summarizeSweep(sweep.res.list_doublet, GT = FALSE)
+bcmvn_doublet <- find.pK(sweep.stats_doublet)
+
+ggplot(bcmvn_doublet, aes(pK, BCmetric, group = 1)) +
+  geom_point() +
+  geom_line()
+
+pK <- bcmvn_doublet %>% # select the pK that corresponds to max bcmvn to optimize doublet detection
+  filter(BCmetric == max(BCmetric)) %>%
+  select(pK) 
+pK <- as.numeric(as.character(pK[[1]]))
+
+## Homotypic Doublet Proportion Estimate
+annotations <- doublet.seurat.obj@meta.data$seurat_clusters
+homotypic.prop <- modelHomotypic(annotations)           
+nExp_poi <- round(0.06*nrow(doublet.seurat.obj@meta.data))  ## Assuming 6% doublet formation rate - tailor for your dataset
+nExp_poi.adj <- round(nExp_poi*(1-homotypic.prop))
+
+## Run DoubletFinder
+doublet.seurat.obj <- doubletFinder_v3(doublet.seurat.obj,
+                                       PCs = 1:15,
+                                       pN = 0.25,
+                                       pK = pK,
+                                       nExp = nExp_poi.adj,
+                                       reuse.pANN = FALSE,
+                                       sct = FALSE)
+
+## visualize doublets
+DimPlot(doublet.seurat.obj, reduction = 'umap',group.by = "DF.classifications_0.25_0.3_42")
+
+## number of singlets and doublets
+table(doublet.seurat.obj@meta.data$DF.classifications_0.25_0.3_42)
+
+## remove doublets
+singlet <- subset(doublet.seurat.obj,subset = DF.classifications_0.25_0.3_42 == "Singlet")
+```

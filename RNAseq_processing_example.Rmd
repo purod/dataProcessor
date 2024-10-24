@@ -1,0 +1,261 @@
+
+# load in RNAseq
+```{r}
+# patients with at least two time points
+
+source("/home/qdu/functions/dataProcessing/RNAseq/normalization.DEseq2.R")
+source("/home/qdu/functions/dataProcessing/RNAseq/filterLowExpressed.Fred.R")
+source("/home/qdu/functions/dataProcessing/RNAseq/add_suffix_2_ensemblID.R")
+
+RNAseqAll <- RNAseq %>% tibble::column_to_rownames( var="V1")  # 16466 genes
+RNAseqAll.normal <- normalize.DEseq2( RNAseqAll, matrixDesign=NULL )
+
+# drop genes with low expression level across the most samples
+# RNAseqAll.high = filter_rnaseq_count( RNAseqAll ) # 16466 genes
+
+rna.clean.all <- t(RNAseqAll.normal) %>% as.data.frame() %>% 
+  add_rownames(var = 'sample') %>% as.data.frame() %>% 
+  addGeneSuffix()
+
+rna.raw.all <- t(RNAseqAll) %>% as.data.frame() %>% 
+  add_rownames(var = 'sample') %>% as.data.frame() %>% 
+  addGeneSuffix()
+```
+QC: potential covariates
+```{r}
+## 1.a. biplot to check batch effect of time
+## g = biplotByGroup(df=rna.clean.all[,2:10], groups=meta$AVISIT) + theme_classicM("top")
+## g
+## result: I can see a batch effect in the direction of the first PC and this is
+## consistent with the expression pattern of most genes that they are low-expressed at the
+## baseline and then up-regulated in the next few time points. Expression-level at week2 is 
+## close to what we saw at week4.
+
+# 1.b. correlation between the main pattern and the levels of blood components across four times
+rna.pca <- prcomp(rna.clean.all[,-1], center = TRUE, scale. = TRUE)
+cor(rna.pca$x[,1], meta %>% select(HEBASO:PLATELETS), use="pairwise.complete.obs")
+# HEBASO     HEEOS      HELYM    HENEUT     HEMONO       WBC        RBC  PLATELETS
+# -0.1027093 -0.172429 -0.6307734 0.6781708 -0.0336139 0.3797934 -0.0322392 0.09270293
+# Comment: some blood types are highly correated with the main pattern of the RNAseq data
+
+# 1.c. How about the correlations with other variables
+cor(rna.pca$x[,1], meta %>% select(PartialMayoScore:PGA), use="pairwise.complete.obs")
+# PartialMayoScore StoolFrequency RectalBleeding       PGA
+#     0.2833034      0.2610479      0.2265548 0.2358201
+
+# 2. How about the correlation between the main pattern of protein and RNA
+allDataModalities <- meta %>% inner_join(rna.clean.all,by=c("samples"="ID")) %>% 
+  inner_join(protein.clean.all,by=c("SUBJID"="SUBJ_ID","AVISIT"="TIME"))
+
+rna.pca <-  prcomp(allDataModalities %>% select(ENSG00000000419_DPM1:ENSG00000286271), 
+                       center = TRUE, scale. = TRUE)
+
+protein4pca <- allDataModalities %>% select(PPP1R9B:CSF.1)
+protein4pca[which(is.na(protein4pca),arr.ind = T)] = 
+  colMeans(protein4pca,na.rm = T)[which(is.na(protein4pca),arr.ind = T)[,2]]
+protein.pca <-  prcomp(protein4pca,center = TRUE, scale. = TRUE)
+
+g = biplotByGroup(df=protein4pca, groups=allDataModalities$AVISIT)
+g
+cor(rna.pca$x[,1],protein.pca$x[,2]) # -0.0169 almost no correlation between the main patterns
+cor(protein.pca$x[,2], allDataModalities %>% select(HEBASO:PLATELETS), use="pairwise.complete.obs")
+# HEBASO    HEEOS      HELYM      HENEUT     HEMONO        WBC         RBC PLATELETS
+# -0.03272328 0.155776 0.05107477 0.001155973 0.03248229 0.02395063 -0.01437352 0.1548318
+
+# 3. how does the biplot of blood components look like
+blood4pca = allDataModalities %>% select(HEBASO:PLATELETS)
+blood4pca[which(is.na(blood4pca),arr.ind = T)] = 
+  colMeans(blood4pca,na.rm = T)[which(is.na(blood4pca),arr.ind = T)[,2]]
+g = biplotByGroup(df=blood4pca, groups=allDataModalities$AVISIT)
+g
+
+blood.pca <-  prcomp(blood4pca,center = TRUE, scale. = TRUE)
+cor(blood.pca$x[,1], rna.pca$x[,1]) 
+# -0.15, the main blood pattern is not enough to describe the correlation between the 
+# RNAseq and blood components
+
+# 4. How about the correlation between the main expression pattern and the blood components
+metaRNAWEEK0 <- meta %>% select( SUBJID:samples, HEBASO:PLATELETS ) %>% 
+  left_join( rna.clean.all, by=c("samples"="ID")) %>% 
+  filter( AVISIT == "WEEK0" )
+
+rna.pcaW0 <-  prcomp(metaRNAWEEK0[,12:ncol(metaRNAWEEK0)], center = TRUE, scale. = TRUE)
+cor(rna.pcaW0$x[,1], metaRNAWEEK0 %>% select( HEBASO:PLATELETS ), use="pairwise.complete.obs")
+# HEBASO      HEEOS      HELYM    HENEUT     HEMONO      WBC        RBC  PLATELETS
+# -0.1819925 -0.2834884 -0.6605538 0.6033777 -0.1697294 0.309128 -0.0703535 0.02449112
+
+metaRNAWEEK8 <- meta %>% select( SUBJID:samples, HEBASO:PLATELETS ) %>% 
+  left_join( rna.clean.all, by=c("samples"="ID")) %>% 
+  filter( AVISIT == "WEEK8" )
+
+rna.pcaW8 <-  prcomp(metaRNAWEEK8[,12:ncol(metaRNAWEEK8)], center = TRUE, scale. = TRUE)
+cor(rna.pcaW8$x[,1], metaRNAWEEK8 %>% select( HEBASO:PLATELETS ), use="pairwise.complete.obs")
+# HEBASO      HEEOS     HELYM     HENEUT    HEMONO        WBC       RBC  PLATELETS
+# -0.01798319 0.06431135 0.5182959 -0.7145232 -0.175935 -0.4905091 0.0189028 -0.2167212
+# comment: even within each time point, the main expression is correlated with the blood cells
+# One interesting thing is that the correlation sign for WBC flipped
+```
+
+# select genes using blood components as covariates
+dataframe.protein for random intercept model(not used)
+```{r}
+# 215 subjects
+df.selection.pr <- meta %>% 
+  select(SUBJID, Time=AVISIT,
+         Adalimumab=`TRT01P:Planned Treatment for Induction`) %>% 
+  inner_join(protein.clean.all, by=c("SUBJID"="SUBJ_ID", "Time"="TIME")) %>%
+  # patients with at least two time points
+  arrange(SUBJID, Time) %>% add_count(SUBJID) %>% filter(n>1) %>% select(-n) %>% 
+  mutate(Adalimumab=ifelse(Adalimumab=='ADALIMUMAB HIGH DOSE','High','Standard'))
+```
+dataframe.RNAseq for random intercept model
+```{r}
+# 284 subjects
+## normlized counts
+df.selection.rna <- meta %>% 
+  select(SUBJID, Time=AVISIT, samples, 
+         Adalimumab=`TRT01P:Planned Treatment for Induction`,
+         HEBASO:PLATELETS) %>% 
+  inner_join(rna.clean.all, by=c("samples"="ID")) %>%
+  # patients with at least two time points
+  arrange(SUBJID, Time) %>% add_count(SUBJID) %>% filter(n>1) %>% select(-n) %>% 
+  mutate(Adalimumab=ifelse(Adalimumab=='ADALIMUMAB HIGH DOSE','High','Standard')) %>% 
+  select(-samples)
+```
+random intercept model
+```{r}
+# protein: significant terms [not used]
+selection.pr.pval <- mulUniRepeatMeasure(df.selection.pr, 
+                    Time="Time", Treatment="Adalimumab", Subject="SUBJID")
+
+all.data.pr.sig = selection.pr.pval %>% # 91 proteins
+  filter( Adalimumab<0.05 | Time<0.05 | Time.Adalimumab<0.05 ) 
+
+# RNA-seq: significant terms
+selection.rna.pval <- mulUniRepeatMeasure(df.selection.rna, 
+                    Time="Time", Treatment="Adalimumab", Subject="SUBJID",
+                    covariates=c("HEBASO","HEEOS","HELYM","HENEUT","HEMONO","WBC","RBC","PLATELETS"))
+
+selection.rna.adjust = selection.rna.pval %>% 
+  rownames_to_column(var="Gene") %>% 
+  mutate(TimeAdjust = p.adjust(Time, method="fdr", nrow(selection.rna.pval))) %>% 
+  arrange(Time)
+
+drug.Interaction.sig = # 6815 genes
+  selection.rna.adjust$Gene[ selection.rna.adjust$Adalimumab<0.05 | 
+                              selection.rna.adjust$TimeAdjust<0.01 |
+                              selection.rna.adjust$Time.Adalimumab<0.05 ]
+
+save(selection.rna.adjust, 
+     file="/home/qdu/Abbvie/data/Inter/RandomInterceptModelAlltimepointsAllsamplesBloodCovariates05022021.RData" )
+load("/home/qdu/Abbvie/data/Inter/RandomInterceptModelAlltimepointsAllsamplesBloodCovariates05022021.RData")
+```
+Summary: Distribution of significant terms
+```{r}
+# 1. RNA
+hist(-log(selection.rna.adjust$Time,base=10), xlab="-log10(p values)")
+sum(selection.rna.adjust$TimeAdjust < 0.01 ) # 5791
+sum(selection.rna.adjust$Adalimumab < 0.05 ) # 440
+sum(selection.rna.adjust$Time.Adalimumab < 0.05 ) # 1502
+```
+
+# remove blood components from RNA-seq data
+RNAseq(strategy of regressing out the blood covariates)
+```{r}
+# blood cells
+batch.matrix = meta %>% select(HEBASO:PLATELETS) %>% fillMM %>% scale
+
+# covariates
+covariates.matrix <- meta %>% 
+  # rename variables
+  setNames( strsplit(colnames(meta),":") %>% sapply(.,"[",1) ) %>% 
+  select(
+    Age=AGE, Sex=SEX, Ethnic=ETHNIC, Country=COUNTRY, # demographics (4)
+    AntiTNFH=RNATNF, AlcohoH=ALCBLUSE, TobaccoH=TBNIBLUS,  # medicine/drug history (3)
+    CorticosteroidBL=CORBL, ImmunosuppressantBL=IMMBL, AminosalicylatesBL=AMNBL, # baseline medicine usage (3)
+    PancolitisBL=PANCOBL, DiseaseDuration=DURDS, # baseline disease (2)
+    AdalimumabDose=TRT01P, # treatment
+    DiaBloodPressure=DIABPBL, SysBloodPressure=SYSBPBL, Height=HEIGHTBL, Weight=WEIGHTBL, 
+    PulseRate=HRBL, RespRate=RESPBL, Temperature=TEMPBL, BMI=BMIBL # vitals (8)
+  ) %>% 
+  mutate( Country=ifelse( Country=="US", Country, "NON-US" ) ) %>% 
+  mutate_if(is.character,as.factor) %>% data.matrix() %>% fillMM %>% scale
+
+source("/home/qdu/functions/dataProcessing/RNAseq/removeBatch_RNA.R")
+# regress out the effects of blood cells at one time
+noBat.rna = removeBatch_RNA( RNAseqAll.normal, 
+                               batch.matrix, covariates.matrix, noCombat=T )
+
+# noBat.rnaCombat = removeBatch_RNA( RNAseqAll.normal, 
+#                               batch.matrix, covariates.matrix, noCombat=F )
+
+rna.clean.all <- t(noBat.rna) %>% as.data.frame() %>% 
+  add_rownames(var = 'sample') %>% as.data.frame() %>% 
+  addGeneSuffix()
+
+save(rna.clean.all, rna.raw.all, RNAseqAll.normal,noBat.rnaCombat, file="/home/qdu/Abbvie/data/Inter/Normalized_noBloodRNAseqAllGenes05042021.RData")
+load("/home/qdu/Abbvie/data/Inter/Normalized_noBloodRNAseqAllGenes05042021.RData")
+```
+QC: evaluation on the adjustment
+```{r}
+# 1. biplot
+g = biplotByGroup(df=t(noBat.rna), groups=meta$AVISIT)
+g
+# 2.a correlation between the PC1 and blood cells
+rna.pca <- prcomp(rna.clean.all[,-1], center = TRUE, scale. = TRUE)
+cor(rna.pca$x[,1], meta %>% select(HEBASO:PLATELETS), use="pairwise.complete.obs")
+# HEBASO       HEEOS        HELYM       HENEUT      HEMONO         WBC         RBC     PLATELETS
+# -0.06271845 -0.06218288 0.001981177 -0.01055263 -0.02979591 -0.02013604 -0.01965647  -0.0003668357
+
+# 3. correlation with other covariates
+cor( RNAseqAll.normal[5,], covariates.matrix[,1:5] )
+#      Age       Sex     Ethnic     Country   AntiTNFH
+# 0.3407044 0.1590956 0.03084845 -0.04368962 0.02335494
+
+cor( noBat.rna[5,], covariates.matrix[,1:5] )
+#    Age       Sex     Ethnic     Country   AntiTNFH
+# 0.3722701 0.1184047 0.04778293 -0.05408522 0.03252883
+
+# 4. correlation between gene expression before and after adjustment
+gene.cor <- lapply(1:nrow(RNAseqAll.normal), function(i){ 
+  cor(RNAseqAll.normal[i,],noBat.rna[i,]) }) %>% unlist()
+hist(gene.cor,xlab="Correlations between genes before and after removing batches" )
+
+sample.cor <- lapply(1:ncol(RNAseqAll.normal), function(i){ 
+  cor(RNAseqAll.normal[,i],noBat.rna[,i]) }) %>% unlist()
+hist(sample.cor,xlab="Correlations between samples before and after removing batches" )
+
+## 5. relationship between blood components and time points
+test <- meta %>% select(AVISIT, HEBASO:PLATELETS) %>% 
+  filter(AVISIT%in%c("WEEK0","WEEK8")) %>% 
+    mutate( Week0=ifelse(AVISIT=="WEEK0",1,0) ) %>% 
+    select(-AVISIT) %>% data.matrix
+```
+QC: Don't do the adjustment for each time point separately(not used)
+```{r}
+# regress out the effects of blood cells by time point
+sampleW0 = which(meta$AVISIT=="WEEK0")
+sampleW2 = which(meta$AVISIT=="WEEK2")
+sampleW4 = which(meta$AVISIT=="WEEK4")
+sampleW8 = which(meta$AVISIT=="WEEK8")
+
+noBat.rnaW0 = removeBatch_RNA( RNAseqAll.normal[,sampleW0], 
+                               batch.matrix[sampleW0,], covariates.matrix[sampleW0,] )
+noBat.rnaW2 = removeBatch_RNA( RNAseqAll.normal[,sampleW2], 
+                               batch.matrix[sampleW2,], covariates.matrix[sampleW2,] )
+noBat.rnaW4 = removeBatch_RNA( RNAseqAll.normal[,sampleW4], 
+                               batch.matrix[sampleW4,], covariates.matrix[sampleW4,] )
+noBat.rnaW8 = removeBatch_RNA( RNAseqAll.normal[,sampleW8], 
+                               batch.matrix[sampleW8,], covariates.matrix[sampleW8,] )
+# rna matrix after regressing out batch effect
+RNAseqAll.rb = matrix(NA, nrow=nrow(RNAseqAll.normal), ncol=ncol(RNAseqAll.normal),
+                      dimnames = dimnames(RNAseqAll.normal) )
+
+RNAseqAll.rb[,sampleW0] = noBat.rnaW0
+RNAseqAll.rb[,sampleW2] = noBat.rnaW2
+RNAseqAll.rb[,sampleW4] = noBat.rnaW4
+RNAseqAll.rb[,sampleW8] = noBat.rnaW8
+
+g = biplotByGroup(df=t(RNAseqAll.rb), groups=meta$AVISIT)
+g
+```
