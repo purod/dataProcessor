@@ -88,19 +88,18 @@ variableFeatureSelect <- function(rna_data, top_percentage = NULL,
           title = "Standardized Variance vs Mean Expression"
         ) 
     } else{
-      library(ggplot2)
-      g <- ggplot(variance_data, aes(x = Mean, y = Standard_deviation)) +
-        geom_point(aes(color = IsSelected), alpha = 0.5) +
-        scale_color_manual(values = c("Selected" = "red", "Not Selected" = "black")) +
-        # Add vertical dashed line for the mean cutoff
-        geom_vline(xintercept = mean_cutoff, linetype = "dashed", color = "blue") +
-        # Add horizontal dashed line for the standard deviation cutoff
-        geom_hline(yintercept = sd_cutoff, linetype = "dashed", color = "blue") +
-        labs(
-          x = "Mean Expression",
-          y = "Standard_deviation",
-          title = "Standard_deviation vs Mean Expression"
-        ) 
+
+      g <- ggplot(data = variance_data, aes(x = Mean, y = Standard_deviation)) +
+        geom_bin2d(bins=100) + theme_bw(base_size = 18)+
+        geom_vline(aes(xintercept = mean_cutoff), colour = "red", linewidth = 2, linetype = "dashed" ) +
+        geom_hline(aes(yintercept = sd_cutoff), colour = "red", linewidth = 2, linetype = "dashed") +
+        xlab("mean Expression") + ylab("sd Expression") + 
+        theme(
+         axis.text = element_text(size=20),
+         axis.title = element_text(size = 24),
+         plot.title = element_text(size = 20, hjust = 0.5),
+         legend.text = element_text(size = 14),
+         legend.title = element_text(size = 16))
     }
     # Return the selected genes
     return(list(selected_genes=selected_genes, g=g))

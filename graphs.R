@@ -106,8 +106,7 @@ theme_pub <- function(ratio=c(15,15,14,14,10,10), legend.position = "right"){
       legend.title = element_text(face = "bold",size=ratio[5]),
       legend.text = element_text(face = "bold",size=ratio[5]),
       # text
-      text = element_text(size = ratio[6]),
-      plot.margin=unit(c(10,5,5,5),"mm")
+      text = element_text(size = ratio[6])
       
     )
   
