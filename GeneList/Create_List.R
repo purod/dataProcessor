@@ -22,7 +22,7 @@ library("xls")
 data <- readxl::read_excel("/projects/oncology/clients/orion/GNS_TEAD/mmc6.xlsx", 
                    sheet = "Table S6D", skip=4)
 
-# %% cancer gene list
+# %% cancer gene list version 37
 Cosmic = data.table::fread("/projects/oncology/databases/knownCancerGenes/COSMIC/Census_allTue Apr  9 03_10_07 2024.csv") %>% 
   pull(`Gene Symbol`) %>% unique() # 743 genes
 Cosmic_genes <- Cosmic %>% geneName2ID(genome_version="37") 
@@ -36,3 +36,16 @@ combinedGenes = combined_genes$G_list
 save( CosmicGenes, NCGGenes, combinedGenes,
      file="/home/qdu/git/dataProcessor/GeneList/Cosmic_NCG_cancer_genes_V37.RData")
 
+# %% cancer gene list version 38
+Cosmic = data.table::fread("/projects/oncology/databases/knownCancerGenes/COSMIC/Census_allTue Apr  9 03_10_07 2024.csv") %>% 
+  pull(`Gene Symbol`) %>% unique() # 743 genes
+Cosmic_genes <- Cosmic %>% geneName2ID(genome_version="38") 
+NCG = data.table::fread("/projects/oncology/databases/knownCancerGenes/NCG/NCG_cancerdrivers_annotation_supporting_evidence.tsv") %>% 
+  pull(symbol) %>%  unique() # 3,347 genes
+NCG_genes <- NCG %>% geneName2ID(genome_version="38")
+combined_genes <- unique(c(Cosmic, NCG)) %>% geneName2ID(genome_version="38") # 3842 genes
+CosmicGenes = Cosmic_genes$G_list
+NCGGenes = NCG_genes$G_list
+combinedGenes = combined_genes$G_list
+save( CosmicGenes, NCGGenes, combinedGenes,
+     file="/home/qdu/git/dataProcessor/GeneList/Cosmic_NCG_cancer_genes_V38.RData")

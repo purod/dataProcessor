@@ -1,6 +1,6 @@
 variableFeatureSelect <- function(rna_data, top_percentage = NULL, 
                                   meanSd_percentage = NULL, meanSd_cut = NULL, 
-                                  meanSd_prior_percentage=0.05, prior_genes,
+                                  meanSd_prior_percentage=NULL, prior_genes=NULL,
                                   plot = TRUE) {
   # Ensure input is a matrix or data frame
   if (!is.matrix(rna_data) && !is.data.frame(rna_data)) {
@@ -17,7 +17,7 @@ variableFeatureSelect <- function(rna_data, top_percentage = NULL,
 
   # Strategy 1: use 5% of cancer genes as cutoffs for all genes
   if(!is.null(meanSd_prior_percentage)){
-    consensus_genes <- rna_data[,colnames(rna_data)%in%CosmicGenes$hgnc_symbol] 
+    consensus_genes <- rna_data[,colnames(rna_data)%in%prior_genes] 
     mean_cutoff <- apply( consensus_genes, 2, mean ) %>% unlist %>% quantile(meanSd_prior_percentage)
     sd_cutoff <- apply( consensus_genes, 2, sd ) %>% unlist %>% quantile(meanSd_prior_percentage)
   }
@@ -31,19 +31,6 @@ variableFeatureSelect <- function(rna_data, top_percentage = NULL,
     mean_cutoff <- meanSd_cut[1]
     sd_cutoff <- meanSd_cut[2]
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   # 2. Calculate standardized variance (variance / mean)
   standardized_variance <- gene_variances / gene_means
@@ -87,6 +74,7 @@ variableFeatureSelect <- function(rna_data, top_percentage = NULL,
           y = "Standardized Variance",
           title = "Standardized Variance vs Mean Expression"
         ) 
+        
     } else{
 
       g <- ggplot(data = variance_data, aes(x = Mean, y = Standard_deviation)) +

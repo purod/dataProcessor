@@ -1,0 +1,114 @@
+---
+title: "scRNA_workflow"
+output: html_document
+---
+```{r}
+library("KEGGREST")
+```
+# kegg
+```{r ras signaling pathway}
+#Get the list of numbers, gene symbols and gene description
+names <- keggGet("hsa04014")[[1]]$GENE
+#Delete the gene number by deleting every other line
+namesodd <-  names[seq(0,length(names),2)]
+#Create a substring deleting everything after the ; on each line (this deletes the gene description).
+kegg_kras <- gsub("\\;.*","",namesodd)
+#export the vector as a csv
+write.csv(kegg_kras, file = "KEGG_Kras_hsa05215",quote = F, row.names = F)
+```
+```{r DDR}
+kegg_paths <- data.frame( 
+  ID = c( "hsa03450", "hsa03440", "hsa03430", "hsa03420", "hsa03410"),
+  Name = c( "non-homologous end joining","homologous recombination", "mismatch repair", "nucleotide excision repair", "base excision repair"), 
+  stringsAsFactors = F  )
+
+concatenated_data <- data.table()
+
+for( pos in 1:nrow(kegg_paths) ){
+  #Get the list of numbers, gene symbols and gene description
+  names <- keggGet(kegg_paths$ID[pos])[[1]]$GENE
+  #Delete the gene number by deleting every other line
+  namesodd <-  names[seq(0,length(names),2)]
+  #Create a substring deleting everything after the ; on each line (this   deletes the gene description).
+  path_genes <- gsub("\\;.*","",namesodd)
+  kegg_file <- data.frame( PathName=kegg_paths$Name[pos], GeneName=path_genes )
+  concatenated_data <- rbind( concatenated_data, kegg_file )
+}
+
+kegg_ddr = concatenated_data
+
+write.csv(concatenated_data, 
+          file = "KEGG_DDR",quote = F, row.names = F)
+
+```
+```{r pancreatic cancer}
+#Get the list of numbers, gene symbols and gene description
+names <- keggGet("hsa05212")[[1]]$GENE
+#Delete the gene number by deleting every other line
+namesodd <-  names[seq(0,length(names),2)]
+#Create a substring deleting everything after the ; on each line (this deletes the gene description).
+kegg_pancreatic_cancer <- gsub("\\;.*","",namesodd)
+#export the vector as a csv
+write.csv(kegg_pancreatic_cancer, 
+          file = "KEGG_pancreatic_cancer",quote = F, row.names = F)
+```
+# rectome
+```{r Kras MAPK}
+# Load required package
+library(data.table)
+
+file_path <- "/home/qdu/Oncology/Servier_pancreatic/data/raw/kras"
+# List all TSV files in the directory
+tsv_files <- list.files(path = "/home/qdu/Oncology/Servier_pancreatic/data/raw/kras", 
+                        pattern = "\\.tsv$")
+
+# Initialize an empty data.table to store concatenated data
+concatenated_data <- data.table()
+
+# Loop through each TSV file, read it, and add a column for the source file
+for (file in tsv_files) {
+  file_data <- fread(paste0(file_path,"/",file), header = TRUE, sep = "\t")  # Read TSV file
+  source_file <- sub("\\.tsv$", "", file)  # Remove ".tsv" extension from source file name
+  file_data$SourceFile <- source_file  # Add a column for the source file
+  concatenated_data <- rbind(concatenated_data, file_data)  # Concatenate data
+}
+
+reactome_kras <- concatenated_data %>% 
+  dplyr::select(-V4) %>% 
+  separate(MoleculeName, into = c("UniProt_ID", "GeneName"), sep = " ") 
+
+#export the vector as a csv
+write.csv(reactome_kras, file = "Kras_reactome",quote = F, row.names = F)
+```
+```{r DDR}
+file_path <- "/home/qdu/Oncology/Servier_pancreatic/data/raw/ddr"
+# List all TSV files in the directory
+tsv_files <- list.files(path = file_path, 
+                        pattern = "\\.tsv$")
+
+# Initialize an empty data.table to store concatenated data
+concatenated_data <- data.table()
+
+# Loop through each TSV file, read it, and add a column for the source file
+for (file in tsv_files) {
+  file_data <- fread(paste0(file_path,"/",file), header = TRUE, sep = "\t")  # Read TSV file
+  source_file <- sub("\\.tsv$", "", file)  # Remove ".tsv" extension from source file name
+  file_data$SourceFile <- source_file  # Add a column for the source file
+  concatenated_data <- rbind(concatenated_data, file_data)  # Concatenate data
+}
+
+reactome_ddr <- concatenated_data %>% 
+  dplyr::select(-V4) %>% 
+  separate(MoleculeName, into = c("UniProt_ID", "GeneName"), sep = " ") 
+
+#export the vector as a csv
+write.csv(reactome_ddr, file = "ddr_reactome.csv",quote = F, row.names = F)
+```
+```{r}
+save(kegg_kras, kegg_ddr, kegg_pancreatic_cancer, reactome_kras,reactome_ddr, file="pathway_genes.RData")
+```
+
+
+
+
+

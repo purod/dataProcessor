@@ -7,29 +7,6 @@ library('survcomp')
 library(viridis)
 library(readxl)
 
-# data transformation
-## convert table result to data frame
-tableVec2df <- function(name_vector, ntop=NULL){
-  ntop=ifelse(is.null(ntop),length(name_vector), ntop)
-  tableSort <- head( sort(name_vector, decreasing = T), ntop)
-  name <- names(tableSort)
-  Frequency <- as.vector(tableSort)
-  df <- data.frame(name, Frequency)
-  df$name <- factor(df$name, levels=df$name)
-  return(df)
-}
-tableVecs2df <- function(name_df){
-  df <- reshape2::melt(name_df)
-  return(df)
-}
-
-## categorical variable filtering
-
-
-
-
-
-
 ## add ffix 
 add.Type <- function(df, excludeVars=NULL){
   
@@ -87,31 +64,6 @@ get.conciseName <- function(dfName, suffix="_continuous|_binary|_categorical"){
 }
 
 
-
-
-# B. themes
-theme_pub <- function(ratio=c(15,15,14,14,10,10), legend.position = "right"){
-  print("Default ratio is main title:2, axis title:1.5, axis text: 2, legend: 2, text:3")
-  theme_classic() +
-    theme(
-      # axis and fig title
-      plot.title = element_text(face = "bold",size=ratio[1]),
-      axis.title = element_text(face = "bold",size=ratio[2]),
-      # axis text and lines
-      axis.text.y = element_text(size=ratio[3],color="black"),
-      axis.text.x = element_text(size=ratio[4],color="black",angle=45,hjust=1),
-      axis.line = element_line(size=rel(0.2),linetype="solid"),
-      # legend 
-      legend.position = legend.position,
-      legend.title = element_text(face = "bold",size=ratio[5]),
-      legend.text = element_text(face = "bold",size=ratio[5]),
-      # text
-      text = element_text(size = ratio[6])
-      
-    )
-  
-}
-
 # tables
 # DT::datatable()
 
@@ -162,15 +114,3 @@ scatterPlot <- function(df, xyfill){
 ## Approach 1
 # scatterPlots <- lapply( c(), function(auc){ scatterPlot() }) %>% 
 # gridExtra::grid.arrange(grobs = ., ncol = 3, top = "Correlation")
-
-# venn diagram
-venn_diagram <- function(dl){
-  #'  @param dl : input data list
-  #'              e.g. dl=list(a=,b=,c=)
-  #'              
-  ggvenn::ggvenn(
-    dl, show_percentage = FALSE,
-    fill_color = c("#0073C2FF", "#EFC000FF", "#868686FF", "#CD534CFF", "#56B4E9FF")[1:length(dl)],
-    stroke_size = 0.5, set_name_size = 6, text_size=4
-  )
-}

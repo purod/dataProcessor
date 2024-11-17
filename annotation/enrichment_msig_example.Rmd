@@ -1,0 +1,43 @@
+---
+title: "enrichment example"
+author: ""
+date: "2024-02-16"
+output: workflowr::wflow_html
+editor_options:
+  chunk_output_type: console
+---
+
+
+# Hallmark enrichment
+```{r}
+# load libraries
+library("clusterProfiler")
+library("msigdbr")
+
+# Prepare gene sets
+msig_h <- msigdbr(species = "Homo sapiens", category = "H") %>%  # replace "H" with "C2" for curated C2 genesets
+    dplyr::select(gs_name, entrez_gene) %>%
+    dplyr::rename(ont = gs_name, gene = entrez_gene)
+
+# convert to entrez id
+hallmark_enrichment_universe <-  getBM(attributes = c("hgnc_symbol", "entrezgene_id"),
+                                       filters = "hgnc_symbol",
+                                       values = overlap.genes,
+                                       mart = ensembl2)
+
+# collect the driver gene entrez ids
+enrichment_pink <-
+hallmark_enrichment_universe %>% filter(hgnc_symbol %in% risky_pink)
+
+# REFS driver genes pathway enrichment
+msig_pink_hallmark <- enricher(gene = enrichment_pink$entrezgene_id,
+                     universe = as.character(hallmark_enrichment_universe$entrezgene_id),
+                     TERM2GENE = msig_h) %>%
+    as_tibble()
+
+# check the output
+msig_pink_hallmark %>%
+  arrange(p.adjust) %>%
+  select(ID, p.adjust) %>%
+  View()
+```  

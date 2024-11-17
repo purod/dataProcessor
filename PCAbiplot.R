@@ -5,7 +5,7 @@ biplotByGroup <- function(df, groups=NULL, show_outliers=F, legendPos="top", ell
   # 2D-PC plot with package rgl
   if(!is.null(groups)){
     g <- ggbiplot::ggbiplot(ir.pca, obs.scale = 1, var.scale = 1, 
-                            groups = groups %>% as.character,
+                            group = groups %>% as.character,
                             ellipse = ellipse, circle = F,
                             var.axes = F)
   }else{
