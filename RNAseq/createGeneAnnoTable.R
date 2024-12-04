@@ -10,7 +10,7 @@ createGeneAnnoTable <- function(gene_ids, genome_version = "38") {
     host_url <- "https://grch37.ensembl.org"
     message("Using genome version: GRCh37 (hg19)")
   } else if (genome_version == "38") {
-    host_url <- "https://www.ensembl.org"
+    host_url <- "https://asia.ensembl.org" # https://www.ensembl.org
     message("Using genome version: GRCh38 (hg38)")
   }
 
@@ -56,10 +56,13 @@ createGeneAnnoTable <- function(gene_ids, genome_version = "38") {
     mutate( Entrez_ID=ifelse( Entrez_ID==0, NA, Entrez_ID ) ) %>% 
     mutate( HGNC_Symbol=ifelse( HGNC_Symbol=="", NA, HGNC_Symbol ) ) %>% 
     mutate( HGNC_dot = gsub("-",".", HGNC_Symbol) ) %>% 
-    dplyr::select(-Ensembl_HGNC)  %>%     
+    dplyr::select(-Ensembl_HGNC)  %>%  
+    mutate( Ensembl_HGNC_dot = ifelse( is.na(HGNC_dot), Ensembl_ID,
+                                            paste(Ensembl_ID, HGNC_dot, sep="_"))
+          ) %>%    
     mutate( temp = ifelse( is.na(HGNC_dot), paste("Exp", Ensembl_ID, sep="_"),
-                                            paste("Exp", Ensembl_ID, HGNC_dot, sep="_")
-                         ))       
+                                            paste("Exp", Ensembl_ID, HGNC_dot, sep="_"))
+          )       
   message( paste("Remove", nrow(gene_remove_dupEntrez)-nrow(Anno_table),"duplicated ENSG." ))
   
   # Return the results as a list with the matched annotations and unmatched IDs
