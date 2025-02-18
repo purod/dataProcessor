@@ -26,7 +26,7 @@ biplotArrow <- function(df, sampleType, sampleID, from, to){
     p <- ggplot(pca_df, aes(x = PC1, y = PC2, color = Sample_Type)) +
      geom_point(size = 3) +
      theme_minimal() +
-     labs(title = "PCA Biplot: Primary vs Recurrent Samples", x = "PC1", y = "PC2")
+     labs(title = "PCA Biplot: Pre-treatment vs On-treatment", x = "PC1", y = "PC2")
 
     # Add arrows only for matched patients
     p <- p + geom_segment(data = primary_points,

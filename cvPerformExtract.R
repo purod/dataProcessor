@@ -60,11 +60,13 @@ cvPerformExtract <- function(cvDir, target, targetype="r2MSE", nsamples, target_
   # convert into dataframe
   cvSummary$train <- do.call(rbind, allres$TrainPerf) 
   storage.mode(cvSummary$train) = "numeric"
-  cvSummary$train <- cvSummary$train %>% rbind(.,colMeans(.))
+  cvSummary$train <- cvSummary$train %>% rbind(.,colMeans(.)) %>% 
+    rbind(., unlist(apply(., 2, median)))
   
   cvSummary$test <- do.call(rbind, allres$TestPerf) 
   storage.mode(cvSummary$test) = "numeric"
-  cvSummary$test <- cvSummary$test %>% rbind(.,colMeans(.))
+  cvSummary$test <- cvSummary$test %>% rbind(.,colMeans(.)) %>% 
+    rbind(., unlist(apply(., 2, median)))
   
   return(cvSummary)
 }

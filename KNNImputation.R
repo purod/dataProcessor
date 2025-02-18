@@ -5,6 +5,7 @@ knnImputePC <- function(df, excludeVars = NULL, PCVarsPattern=NULL, noImpVars = 
   #'  @param PCVarsPattern : regular expression defining variables whose principal
   #'                         component matrix will be used for imputation
   #'  @param noImpVars : variables not imputed, but provide info for imputation process
+  #' 
   
   # do we have mispelled variables
   if((!is.null(excludeVars) & any(!excludeVars %in% names(df))) |

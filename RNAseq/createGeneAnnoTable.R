@@ -10,7 +10,7 @@ createGeneAnnoTable <- function(gene_ids, genome_version = "38") {
     host_url <- "https://grch37.ensembl.org"
     message("Using genome version: GRCh37 (hg19)")
   } else if (genome_version == "38") {
-    host_url <- "https://asia.ensembl.org" # https://www.ensembl.org
+    host_url <- "https://useast.ensembl.org" # https://www.ensembl.org
     message("Using genome version: GRCh38 (hg38)")
   }
 

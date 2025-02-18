@@ -1,5 +1,5 @@
 # Load necessary packages
-library(ConsensusClusterPlus)
+library(ConsensusClusterPlus, lib.loc="/home/qdu/R/x86_64-conda-linux-gnu-library/4.3")
 library(pheatmap)
 library(RColorBrewer)
 library(cluster)  # For silhouette calculation and plotting

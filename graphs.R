@@ -114,3 +114,73 @@ scatterPlot <- function(df, xyfill){
 ## Approach 1
 # scatterPlots <- lapply( c(), function(auc){ scatterPlot() }) %>% 
 # gridExtra::grid.arrange(grobs = ., ncol = 3, top = "Correlation")
+
+boxplotMatrixbyGroup <- function(sample_feature, group, features){
+  matrix_group <- cbind(sample_feature, Group = group)
+  
+  # Convert the wide matrix (including group) to a long format
+  plot_data <- as.data.frame(matrix_group) %>%
+    rownames_to_column(var = "Sample") %>%
+    pivot_longer(
+      cols = -c(Sample, Group),
+      names_to = "Gene",
+      values_to = "Expression"
+    ) %>%
+    mutate(Group = factor(Group)) %>%   # Ensure Group is treated as a factor
+  filter(Gene%in%features) %>% 
+  mutate(Gene = factor(Gene, levels=features))
+
+  # Plot using ggplot2
+  ggplot(plot_data, aes(x = Gene, y = Expression, fill = Group)) +
+    geom_boxplot(outlier.shape = 16, outlier.size = 2, notch = FALSE) +
+    #geom_jitter(width = 0.2, size = 2, alpha = 0.6, aes(color = Group)) +
+    labs(
+      title = "Gene Expression Across Groups",
+      x = "Gene",
+      y = "Normalized Expression"
+    ) +
+    theme_pub(grid=TRUE, legend_position = "top")
+} 
+
+
+
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(ggpubr)
+
+boxplotMatrixbyGroupCovariate <- function(sample_feature, group, covariate, features, legend="right") {
+  matrix_group <- cbind(sample_feature, Group = group, Covariate = covariate)
+  
+  # Convert the wide matrix (including group and covariate) to a long format
+  plot_data <- as.data.frame(matrix_group) %>%
+    rownames_to_column(var = "Sample") %>%
+    pivot_longer(
+      cols = -c(Sample, Group, Covariate),
+      names_to = "Gene",
+      values_to = "Expression"
+    ) %>%
+    filter(Gene %in% features) %>%
+    mutate(
+      Gene = factor(Gene, levels = features),
+      Group = factor(Group),
+      Covariate = factor(Covariate)
+    )
+
+  # Plot using ggplot2
+  ggplot(plot_data, aes(x = Gene, y = Expression, fill = interaction(Group, Covariate))) +
+    geom_boxplot(outlier.shape = 16, outlier.size = 2, notch = FALSE, position = position_dodge(0.8)) +
+    labs(
+      title = "Gene Expression Across Groups and Covariates",
+      x = "Gene",
+      y = "Normalized Expression",
+      fill = "Group & Covariate"
+    ) +
+    theme_pub(grid = TRUE, legend = legend) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+
+# multiple graphs
+# 1. multiple graph on the same page
+# library(patchwork)
+# (p1|p2)/(p3/p4)
