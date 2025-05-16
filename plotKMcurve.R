@@ -1,9 +1,9 @@
 
 
-# example: survPlot(survfit(Surv(OS,OS_cens)~idh_codel, data = OS_KM), break_time=20, legend_position="top", ncol=3)
+# example: survPlot(survfit(Surv(OS,OS_cens)~idh_codel, data = OS_KM), break_time=20, legend_position="top")
 
 
-survPlot <- function( fit, ncol=1, legend_position="top", break_time=100,
+survPlot <- function( fit, legend_position="top", break_time=100,
                             linetype=1, palette='jco') {
 
 library(survminer)
@@ -27,8 +27,8 @@ p <-  ggsurvplot(
     legend = legend_position,
     linetype = linetype,
     palette = palette
-  ) +
-    guides(colour = guide_legend(ncol = ncol))           # Adjust legend column count
+  ) #+
+    #guides(colour = guide_legend(ncol = ncol))           # Adjust legend column count
 
 return(p)
 }

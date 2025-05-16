@@ -1,3 +1,4 @@
+# %% 
 #!/home/jdai/miniconda3/envs/VEP/bin/python
 import subprocess
 
@@ -94,8 +95,9 @@ def sort_vcf(input_vcf, output_vcf):
     except FileNotFoundError:
         print("Error: bcftools is not installed or not in the system's PATH.")
 
+# %%
 # Example usage
-input_file = 'VEP_input.txt'  # Replace with your input file containing variants in Simple Allele Format
+input_file = '/home/qdu/git/OrionMO/code/utility/Riaz_VEP_input.txt'  # Replace with your input file containing variants in Simple Allele Format
 output_file = 'VEP_input.vcf'  # Specify the output file name
 sorted_output_file = 'VEP_input_sorted.vcf'  # Specify the name of the sorted output file
 genome_version = 'GRCh37'  # Choose between GRCh37 or GRCh38
@@ -110,3 +112,4 @@ sort_vcf(output_file, sorted_output_file)
 # Annotation with VEP
 # local(cache and codes to be improved): vep --cache /projects/oncology/databases/ensembl_ref --assembly GRCh38 -i test.txt -o test.vep.txt --tab --symbol
 # online: VEP has 50M limitation
+

@@ -1,0 +1,4 @@
+nohup: ignoring input
+Running: vep --cache --offline --dir_cache /home/qdu/.vep --assembly GRCh37 -i VEP_input_sorted.vcf -o VEP_input_sorted.vep.vcf --vcf --symbol --variant_class --af --af_gnomad --canonical --biotype --sift b --polyphen b --fork 16
+Finished in 936.60 seconds
+

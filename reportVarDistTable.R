@@ -1,3 +1,4 @@
+library("gtsummary")
 isDiscreteVar <- function(x, con_cut = 5){
   is_numeric <- ((length(table(x)) >= con_cut) & 
     (Hmisc::all.is.numeric(x, extras = c(NA,"","unknown") ))) 

@@ -94,15 +94,73 @@ scatterPlot <- function(df, xyfill){
   
   ggplot( df, aes_string(x = xyfill[1], y = xyfill[2])) +
     geom_point(size=2) + 
-    #geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "red") +
-    #ggrepel::geom_text_repel(aes(x=model, y=malig, label = GeneName),
-    #                box.padding = 0.1,size=2, max.overlaps=20)
+    
     annotate("text", x = max(dfx), y = max(dfy), 
              label = paste("Pearson Cor =", round(cor(dfx, dfy), 2), "\n",
                            "Spearman Cor =", round(cor(dfx, dfy, method="spearman"), 2)),  
              hjust = 1, vjust = 1, size =5) + 
     theme_pub() 
 }
+scatterPlot <- function(df, xyfill){
+  
+  x = xyfill[1]
+  y = xyfill[2]
+  dfx = df[, x]
+  dfy = df[, y]
+  
+  ggplot(df, aes_string(x = x, y = y)) +
+    geom_point(size = 2) + 
+    # option 1: add diagnal line
+    geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "red") +
+    #ggrepel::geom_text_repel(aes(x=model, y=malig, label = GeneName),
+    #                box.padding = 0.1,size=2, max.overlaps=20)
+    # option 2: add fitted line
+    # geom_smooth(method = "lm", color = "red", linetype = "solid") + # Linear regression line in red
+    annotate("text", x = max(dfx), y = max(dfy), 
+             label = paste("Pearson Cor =", round(cor(dfx, dfy), 2), "\n",
+                           "Spearman Cor =", round(cor(dfx, dfy, method="spearman"), 2)),  
+             hjust = 1, vjust = 1, size = 4, color = "blue") + # Correlation text in blue
+    theme_pub() 
+}
+
+
+scatterPlot <- function(df, xyfill, color_by = NULL) {
+  
+  x <- xyfill[1]
+  y <- xyfill[2]
+  dfx <- df[[x]]
+  dfy <- df[[y]]
+  
+  # Dynamically build the aesthetics
+  aes_expr <- if (!is.null(color_by) && color_by %in% names(df)) {
+    aes_string(x = x, y = y, color = color_by)
+  } else {
+    aes_string(x = x, y = y)
+  }
+
+  ggplot(df, aes_expr) +
+    geom_point(size = 2) +
+    geom_smooth(method = "lm", color = "red", linetype = "solid") +
+    annotate("text", x = max(dfx, na.rm = TRUE), y = max(dfy, na.rm = TRUE), 
+             label = paste("Pearson Cor =", round(cor(dfx, dfy, use = "complete.obs"), 2), "\n",
+                           "Spearman Cor =", round(cor(dfx, dfy, method = "spearman", use = "complete.obs"), 2)),
+             hjust = 1, vjust = 1, size = 4, color = "blue") +
+    theme_pub()
+}
+
+
+
+
+
+
+
+
+# Example Usage
+# scatterPlot(df, c("Tumor_purity", "Orion"))
+
+
+
+
 
 # scale_fill_viridis(discrete = T) 
 # titles: labs(x = x_label, y = y_label, title = title)

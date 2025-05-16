@@ -49,3 +49,13 @@ NCGGenes = NCG_genes$G_list
 combinedGenes = combined_genes$G_list
 save( CosmicGenes, NCGGenes, combinedGenes,
      file="/home/qdu/git/dataProcessor/GeneList/Cosmic_NCG_cancer_genes_V38.RData")
+
+# %% Cell type signature gene list
+T_cells <- c("CD3D", "CD3E", "CD3G", 
+             "CD4", "CD8A", "CD8B", 
+             "CD2", "IL7R", 
+             "TRAC", "TRBC1", "TRBC2")
+
+
+
+

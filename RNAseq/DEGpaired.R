@@ -1,8 +1,8 @@
 library(DESeq2)
-library(apeglm)
+#library(apeglm)
 
 # Function to perform DESeq2 differential expression analysis for paired samples
-differential_expression_paired <- function(count_matrix, sample_info, group_col, pair_col=NULL) {
+differential_expression_paired <- function(count_matrix, sample_info, group_col, pair_col=NULL, FC_method="normal") {
   
   # Check if DESeq2 is installed
   if (!requireNamespace("DESeq2", quietly = TRUE)) {
@@ -46,7 +46,7 @@ differential_expression_paired <- function(count_matrix, sample_info, group_col,
   res <- results(dds)
   
   # Perform log fold-change shrinkage for visualization and ranking
-  resLFC <- lfcShrink(dds, coef = 2, type = "apeglm")
+  resLFC <- lfcShrink(dds, coef = 2, type = FC_method)
   
   # Return the results
   list(
@@ -58,7 +58,7 @@ differential_expression_paired <- function(count_matrix, sample_info, group_col,
 
 DEseqCompare <- function(count_matrix, sample_info, group_col, 
                          pair_col = NULL, covariate_col = NULL, 
-                         test_interaction = FALSE) {
+                         test_interaction = FALSE, FC_method="normal") {
   
   # Check if DESeq2 is installed
   if (!requireNamespace("DESeq2", quietly = TRUE)) {
@@ -128,7 +128,7 @@ DEseqCompare <- function(count_matrix, sample_info, group_col,
   }
   
   # Perform log fold-change shrinkage for visualization and ranking
-  resLFC <- lfcShrink(dds, coef = 2, type = "apeglm")
+  resLFC <- lfcShrink(dds, coef = 2, type = FC_method)
   
   # Return the results
   list(
