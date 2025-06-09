@@ -79,3 +79,61 @@ filter_rnaseq_count <- function(dfcount, max_value=10){
 			  return(dfhighExpre)
 }
 
+filter_tpm <- function(df_tpm, min_tpm = 1, min_samples = 0.2, log_filtered = TRUE) {
+  # ----------------------------------------
+  # INPUT:
+  #   df_tpm       : A data.frame or matrix of TPM values (genes x samples or samples x genes)
+  #   min_tpm      : TPM threshold to consider a gene "expressed" (default: 1)
+  #   min_samples  : Minimum fraction of samples where gene must be expressed (default: 0.2 = 20%)
+  #   log_filtered : If TRUE, return a list with filtered data and gene log
+  #
+  # OUTPUT:
+  #   If log_filtered == FALSE: Filtered expression matrix (genes x samples)
+  #   If log_filtered == TRUE : List with:
+  #     - $exprs_filtered: filtered TPM matrix
+  #     - $filtered_genes: data.frame of genes removed and reasons
+  # ----------------------------------------
+
+  # Step 1: Ensure input is a data.frame
+  if (!is.data.frame(df_tpm)) df_tpm <- as.data.frame(df_tpm)
+
+  # Step 2: Check orientation: genes should be rows
+  transpose_flag <- FALSE
+  if (nrow(df_tpm) < ncol(df_tpm)) {
+    message("Transposing: assuming genes are in columns, samples in rows.")
+    df_tpm <- t(df_tpm)
+    transpose_flag <- TRUE
+  }
+
+  # Step 3: Basic QC checks
+  if (any(is.na(df_tpm))) warning("NA values detected in TPM matrix.")
+  if (!is.numeric(as.matrix(df_tpm))) stop("Input must be numeric (TPM values).")
+
+  # Step 4: Define expression threshold per gene
+  nsamples <- ncol(df_tpm)
+  gene_pass <- apply(df_tpm, 1, function(x) {
+    sum(x >= min_tpm) >= min_samples * nsamples
+  })
+
+  # Step 5: Split into kept and removed genes
+  df_filtered <- df_tpm[gene_pass, , drop = FALSE]
+  genes_removed <- rownames(df_tpm)[!gene_pass]
+
+  # Step 6: Return output
+  if (transpose_flag) df_filtered <- t(df_filtered)
+
+  if (!log_filtered) {
+    return(df_filtered)
+  } else {
+    log_df <- data.frame(
+      Gene = genes_removed,
+      Reason = paste0("TPM < ", min_tpm, " in more than ", round((1 - min_samples) * 100), "% of samples")
+    )
+    return(list(
+      exprs_filtered = df_filtered,
+      filtered_genes = log_df
+    ))
+  }
+}
+
+

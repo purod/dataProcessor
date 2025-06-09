@@ -1,4 +1,10 @@
 normalize.DEseq2 <- function(in.count.df, matrixDesignType=NULL){
+
+    # genes as rows
+    if( nrow(in.count.df) < ncol(in.count.df) ){
+	      message("Transpose the data frame")
+      in.count.df <- t(in.count.df)
+    }
     
     # experimental design
     if ( is.null(matrixDesignType) ){

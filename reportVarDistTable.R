@@ -39,7 +39,7 @@ reportVarDistTable <- function(df, group = NULL) {
                     all_categorical() ~ "{n}"
                 ),
                 type = all_continuous() ~ "continuous2",
-                digits = all_continuous() ~ 2,
+                digits = all_continuous() ~ 0,
                 missing = "ifany",
                 missing_text = "Missing",
                 percent = "column"  # This will calculate percentages within each column

@@ -1,10 +1,13 @@
-checkDFqc <- function(df, empty2NA=FALSE, dropMiss=NULL, dropConstant=FALSE){
+dropDFlqc <- function(df, empty2NA=FALSE, dropMiss=NULL, minNonMissing=NULL, dropConstant=FALSE){
   
-  # QC1: convert "" and " " into NA
+  df <- df %>% 
+    mutate_if(is.logical, as.character) %>%
+    mutate_if(is.factor, as.character)
+  # convert "" and " " into NA
   if(empty2NA){ 
     df <- df %>% 
-      mutate_all(na_if, "") %>% 
-      mutate_all(na_if, " ")
+      mutate(across(where(is.character), ~na_if(., ""))) %>%
+      mutate(across(where(is.character), ~na_if(., " ")))
     message("Convert empty units into NA.\n")
   }
   
@@ -19,7 +22,16 @@ checkDFqc <- function(df, empty2NA=FALSE, dropMiss=NULL, dropConstant=FALSE){
                   dropMiss, ': ', paste(high_miss_vars, collapse=",")))
     cat('\n')
   }
-  
+  # Too few non-missing values
+  low_nonmiss_vars <- c()
+  if (!is.null(minNonMissing)) {
+    nonmiss_count <- colSums(!is.na(df))
+    low_nonmiss_vars <- df_name[nonmiss_count < minNonMissing]
+    if (length(low_nonmiss_vars) > 0)
+      message(sprintf("Excluding %d variables with < %d non-missing values: %s\n", 
+                      length(low_nonmiss_vars), minNonMissing, paste(low_nonmiss_vars, collapse = ", ")))
+  }
+
   # Exclude constant variables 
   high_imbalance_vars <- c()
   if(dropConstant){
@@ -30,9 +42,8 @@ checkDFqc <- function(df, empty2NA=FALSE, dropMiss=NULL, dropConstant=FALSE){
   }
 
   # Variables to be excluded
-  exclude_vars <- unique( c(high_miss_vars, high_imbalance_vars) )
+  exclude_vars <- unique( c(high_miss_vars, high_imbalance_vars, low_nonmiss_vars) )
 
   new_df <- df %>% dplyr::select(-one_of(exclude_vars))
-  
   return(new_df)
 }
