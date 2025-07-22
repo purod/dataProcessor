@@ -18,6 +18,7 @@ for f in os.listdir():
             cmd = (
                 "vep --cache --offline "
                 "--dir_cache /home/qdu/.vep "
+                #"--dir_cache /projects/oncology/databases/ensembl_ref "
                 "--assembly GRCh37 "
                 f"-i {f} -o {out_file} "
                 "--vcf --symbol --variant_class --af --af_gnomad "
@@ -27,10 +28,3 @@ for f in os.listdir():
             start = time.time()
             os.system(cmd)
             print(f"Finished in {time.time() - start:.2f} seconds\n")
-
-
-# convert the format into format that VEP can accept
-# process with VEP
-# filter variant by annotation
-# Convert the remaining variants into matrix with sample as rows, variants or genes as column
-
