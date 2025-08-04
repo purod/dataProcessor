@@ -1,19 +1,20 @@
 oncoplot <- function(mut_matrix, 
                      top_n = 20,
                      sample_annotation = NULL,
+                     order_anno = TRUE,
                      title = "Presence of Mutations in Top Genes across Samples") {
   library(ComplexHeatmap)
   library(circlize)
   library(ggplot2)
   library(grid)
   library(gridExtra)
+  source("~/git/dataProcessor/plotColorOptions.R")
 
   # 确保矩阵为样本 × 基因，后续再转置为基因 × 样本用于绘图
-  if (ncol(mut_matrix) < nrow(mut_matrix)) {
-    mut_matrix <- t(mut_matrix)
-  }
+  #if (ncol(mut_matrix) < nrow(mut_matrix)) {
+  #  mut_matrix <- t(mut_matrix)
+  #}
   mut_matrix <- as.matrix(mut_matrix)
-  mut_matrix <- apply(mut_matrix, 2, as.numeric)
   
   # 计算 top_n 基因
   gene_freq <- colSums(mut_matrix)
@@ -34,8 +35,6 @@ oncoplot <- function(mut_matrix,
           axis.text.y = element_text(size = 10),
           axis.title.x = element_text(size = 10))
 
-  barplot_grob <- gridExtra::grid.arrange(barplot_gg, ncol = 1)
-
   # 创建左边 annotation（频率条）
   left_anno <- rowAnnotation(Mutation_Freq = anno_barplot(gene_counts,
                                                           bar_width = 0.8,
@@ -51,18 +50,27 @@ oncoplot <- function(mut_matrix,
   # 样本注释（可选）
   top_anno <- NULL
   if (!is.null(sample_annotation)) {
-    top_anno <- HeatmapAnnotation(df = sample_annotation[colnames(mat_top), , drop = FALSE])
+    annot <- sample_annotation[colnames(mat_top), , drop = FALSE]
+    if(order_anno){
+      # Auto ordering by all annotation columns
+      ordered_samples <- rownames(annot)[do.call(order, annot)]
+      # Reorder matrix and annotation
+      mat_top <- mat_top[, ordered_samples, drop = FALSE]
+      annot <- annot[ordered_samples, , drop = FALSE]
+    }
+    top_anno <- HeatmapAnnotation(df = annot,
+    col=heatmapTopColors(annot))
   }
 
   # 画 Heatmap
   Heatmap(mat_top,
           name = "Mutation",
-          col = c("0" = "white", "1" = "#0571b0"),  # 蓝色
+          col = c("0" = "lightgrey", "1" = "#0571b0"),  # 蓝色
           show_row_names = TRUE,
-          show_column_names = TRUE,
+          show_column_names = FALSE,
           show_column_dend = FALSE,
           cluster_rows = FALSE,
-          cluster_columns = TRUE,  # 聚类样本
+          cluster_columns = !order_anno,  # 聚类样本
           left_annotation = left_anno,
           top_annotation = top_anno,
           row_names_side = "left",

@@ -110,13 +110,13 @@ highImpactSNVFromVCF <- function(vcf_file,
   }
 
   # Filter: SIFT
-  if ("SIFT" %in% colnames(df)) {
+  if ( ("SIFT" %in% colnames(df)) & !is.null(sift_filter)) {
     df <- df %>% filter(!str_detect(SIFT, paste(sift_filter, collapse = "|")))
     message("🧪 After filtering out SIFT (", paste(sift_filter, collapse = ", "), "): ", nrow(df))
   }
 
   # Filter: PolyPhen
-  if ("PolyPhen" %in% colnames(df)) {
+  if ( ("PolyPhen" %in% colnames(df)) & !is.null(polyphen_filter)) {
     df <- df %>% filter(!str_detect(PolyPhen, paste(polyphen_filter, collapse = "|")))
     message("🧪 After filtering out PolyPhen (", paste(polyphen_filter, collapse = ", "), "): ", nrow(df))
   }
@@ -124,9 +124,10 @@ highImpactSNVFromVCF <- function(vcf_file,
   # Final clean-up and select
   df <- df %>%
     filter(!is.na(SYMBOL) & SYMBOL != "") %>%
+    mutate(Protein_change=paste0(Protein_position, Amino_acids)) %>% 
     select(CHROM, POS, REF, ALT, SYMBOL, Gene, Consequence, IMPACT,
-           AF = any_of(c("AF", "gnomAD_AF")), SIFT, PolyPhen) %>%
-    distinct()
+           AF = any_of(c("AF", "gnomAD_AF")), SIFT, PolyPhen, Protein_change) %>%
+    distinct() 
 
   message("✅ Final number of unique filtered rows: ", nrow(df))
 

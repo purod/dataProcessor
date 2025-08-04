@@ -41,7 +41,7 @@ genomiclong2wide <- function(df,
   # Wide-format feature matrix
   mat <- df_combined %>%
     group_by(!!patient_col, Feature) %>%
-    summarise(Count = n(), .groups = "drop") %>%
+    dplyr::summarise(Count = n(), .groups = "drop") %>%
     pivot_wider(names_from = Feature, values_from = Count, values_fill = 0)
 
   # Convert to binary if specified
