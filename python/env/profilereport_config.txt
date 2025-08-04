@@ -1,0 +1,29 @@
+# custom_config.py
+from ydata_profiling.config import Settings
+
+custom_config = Settings()
+
+# Turn off detailed per-variable stats
+custom_config.vars.cat.length = False
+custom_config.vars.cat.characters = False
+custom_config.vars.cat.words = False
+
+custom_config.vars.text.length = False
+custom_config.vars.text.characters = False
+custom_config.vars.text.words = False
+
+# Turn off interaction plots
+custom_config.interactions.continuous = False
+
+# Turn off missing value matrix
+# Example of setting missing diagram options correctly
+custom_config.missing_diagrams['matrix'] = False
+
+# Simplify HTML output
+custom_config.html.minify_html = True
+
+# Turn off the progress bar
+custom_config.progress_bar = False
+
+# customized settings for tickets 
+
