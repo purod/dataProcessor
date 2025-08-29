@@ -5,6 +5,10 @@
 # Enable inline plotting for Jupyter notebooks
 %matplotlib inline
 
+# show all rows or the first 10 rows, for all, you use None
+pd.set_option("display.max_rows",10)   
+
+
 from src.profilereport_config import custom_config
 
 
