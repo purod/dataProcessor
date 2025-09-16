@@ -22,8 +22,11 @@ import seaborn as sns
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from src.profilereport_config import custom_config
 
+# data quality control
+
+from ydata_profiling import ProfileReport
+from src.profilereport_config import custom_config
 profile = ProfileReport(
     airport, config=custom_config,
     title="Airport Data Profiling Report"      
